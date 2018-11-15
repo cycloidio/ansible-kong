@@ -40,6 +40,21 @@
     group: "{{ kong_group }}"
     mode: 0755
 
+- name: Check if ssl cert exists
+  stat:
+    path: "{{ kong_conf_general_prefix }}/ssl/admin-kong-default.crt"
+  register: kong_ssl_cert_exists
+
+- name: Ensure ssl cert exists
+  when: kong_ssl_cert_exists.stat.exists == False
+  block:
+  - name: Remove incomplete ssl dir
+    file:
+      path: "{{ kong_conf_general_prefix }}/ssl"
+      state: absent
+  - name: Regenerate ssl cert
+    command: "/usr/local/bin/kong prepare"
+
 - name: Detecting if kong running
   command: "ps auxw"
   changed_when: ps_output.stdout.find('kong -c nginx.conf') == -1
